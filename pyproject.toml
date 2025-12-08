@@ -3,7 +3,7 @@ name = "python-project-template"
 version = "0.1.0"
 description = "A template for modern Python projects with pre-configured quality tools."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.13"
 dependencies = []
 
 [dependency-groups]
