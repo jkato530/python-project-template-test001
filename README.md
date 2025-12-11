@@ -42,11 +42,42 @@
 
 ## 開発環境のセットアップ (Development Environment Setup)
 
-### 1. Pythonのバージョン
+### 1. PythonとNode.jsのバージョン
 
-本プロジェクトではPython `3.13` を使用します。`.python-version` ファイルにバージョンが定義されており、`uv`はこのファイルを自動的に尊重して適切なPythonインタプリタを使用します。
+本プロジェクトではPython `3.13` およびNode.js `24.12.0`を使用します。
+それぞれのバージョンは、ルートディレクトリにある `.python-version` と `.nvmrc` ファイルで定義されています。
 
-### 2. 依存関係のインストール
+-   **Python**: `uv` は `.python-version` を参照して適切なPythonインタプリタを使用します。
+-   **Node.js**: `nvm` は `.nvmrc` を参照して適切なNode.jsバージョンをインストール・使用します。
+
+### 2. Node.jsのインストール
+
+Node.jsのバージョン管理には `nvm` を使用します。
+
+1.  `nvm`がインストールされていない場合は、[公式リポジトリ](https://github.com/nvm-sh/nvm)を参考にインストールします。
+    ```bash
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+    ```
+    *インストール後、ターミナルを再起動する必要がある場合があります。*
+
+2.  `.nvmrc` に記載されたバージョンのNode.jsをインストールします。
+    ```bash
+    nvm install
+    ```
+    *`.nvmrc`ファイルがあるため、バージョンを指定する必要はありません。*
+
+3.  プロジェクトで使うNode.jsのバージョンを有効にします。
+    ```bash
+    nvm use
+    ```
+
+4.  対象バージョンがインストールされていることを確認します。
+    ```bash
+    node --version
+    # v24.12.0 などと表示されます
+    ```
+
+### 3. Python依存関係のインストール
 
 パッケージ管理には `uv` を使用します。以下のコマンドで、開発に必要なライブラリをインストールしてください。
 
@@ -62,7 +93,7 @@ source .venv/bin/activate
 uv sync
 ```
 
-### 3. Node.jsツールのインストール
+### 4. Node.jsツールのインストール
 
 コミットメッセージのチェックにはNode.jsベースのツールを使用します。`pnpm` を使って依存関係をインストールしてください。
 
@@ -74,7 +105,7 @@ npm install -g pnpm
 pnpm install
 ```
 
-### 4. Gitフックのセットアップ
+### 5. Gitフックのセットアップ
 
 本プロジェクトでは、コード品質の自動チェックとコミットメッセージの自動生成のためにGitフックを利用します。以下のコマンドを一度だけ実行して、フックを有効化してください。
 
@@ -86,7 +117,7 @@ pre-commit install --hook-type pre-commit --hook-type commit-msg
 pnpm oco hook set
 ```
 
-### 5. OpenCommitの設定
+### 6. OpenCommitの設定
 
 `opencommit`を動作させるために、プロジェクト固有の設定と、マシンごとのグローバル設定が必要です。
 
