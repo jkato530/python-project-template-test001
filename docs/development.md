@@ -272,11 +272,11 @@ mypy .
 
 ```mermaid
 sequenceDiagram
-    actor Developer
+    actor Developer as 開発者
     participant Git
-    participant "pre-commitフック" as PreCommitHook
-    participant "prepare-commit-msgフック (OpenCommit)" as OpenCommitHook
-    participant "commit-msgフック (commitlint)" as CommitlintHook
+    participant PreCommitHook as pre-commitフック
+    participant OpenCommitHook as prepare-commit-msgフック (OpenCommit)
+    participant CommitlintHook commit-msgフック (commitlint)
 
     Developer->>Git: 1. `git commit` を実行
 
