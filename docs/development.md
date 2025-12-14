@@ -1,6 +1,6 @@
 # 開発ガイドライン
 **Document Version: 1.2.0**
-*(Last Updated: 2025-12-10)*
+*(Last Updated: 2025-12-14)*
 
 > [!NOTE]
 > このドキュメントは開発プロセスに関する規約をまとめたものです。プロジェクト本体のバージョンとは独立して管理されます。
@@ -390,11 +390,97 @@ sequenceDiagram
 
 ---
 
-## 5. CI/CD ガイドライン
+## 5. TerraformによるIaC開発ガイドライン
+
+本セクションでは、Google Cloud Platform (GCP) のインフラをコードで管理するためのTerraform開発ガイドラインを定めます。
+
+### 5.1. 基本方針
+
+- **目的**: インフラ構成の再現性、可視性、再利用性を高めることを目的とします。
+- **ツール**: Terraformを利用し、GCPリソースを宣言的に管理します。
+- **状態管理**: TerraformのStateファイルは、`Google Cloud Storage`バケットを利用してチームで共有・ロックします。ローカルでのState管理は禁止です。
+
+### 5.2. ディレクトリ構成
+
+Terraformコードは、目的別に整理された以下のディレクトリ構成を推奨します。
+
+```
+terraform/
+├── environments/
+│   ├── development/  # 開発環境
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   └── backend.tf
+│   └── production/   # 本番環境
+│       ├── main.tf
+│       ├── variables.tf
+│       └── backend.tf
+│
+└── modules/
+    └── gcs/
+        ├── main.tf
+        ├── variables.tf
+        └── outputs.tf
+```
+
+- **`environments/`**: `development`, `production`など環境ごとのルート構成を配置します。ここでモジュールを呼び出し、環境固有の変数を定義します。
+- **`modules/`**: 再利用可能なコンポーネント（VPC, GCS, GKEなど）をモジュールとして作成します。
+
+### 5.3. 開発フロー
+
+1.  **ブランチの作成**: `feature/add-gcs-module` のように、`develop`からブランチを作成します。
+2.  **コードの記述**: `modules/` にモジュールを、`environments/` に呼び出しコードを記述します。
+3.  **初期化**: `terraform init` を実行します。`backend.tf`で指定したGCSバケットにStateが保存されます。
+4.  **フォーマット**: `terraform fmt -recursive` を実行し、コードを整形します。
+5.  **静的解析**: `terraform validate` を実行し、構文エラーがないか確認します。
+6.  **実行計画**: `terraform plan` を実行し、変更内容を確認します。
+7.  **適用**:
+    - 開発環境: `environments/development` ディレクトリで `terraform apply` を実行し、動作確認します。
+    - 本番環境: `main`ブランチへのマージ後、CI/CDパイプライン経由で自動的に `apply` されます。手動での `apply` は原則禁止です。
+8.  **Pull Request**: `develop`ブランチへのPull Requestを作成し、レビューを受けます。`terraform plan` の結果をPRに貼り付けることを推奨します。
+
+### 5.4. テストと品質保証
+
+Terraformコードの品質を担保するため、以下のツールを`pre-commit`フックに導入することを強く推奨します。
+
+- **`terraform_fmt`**: コードを自動整形します。
+- **`terraform_validate`**: 構文チェックを行います。
+- **`tflint`**: ベストプラクティスや規約違反をチェックするLinterです。
+- **`tfsec` または `checkov`**: セキュリティ上の問題を静的解析で検出します。
+
+#### pre-commit-config.yamlへの追加例
+
+`.pre-commit-config.yaml`に以下の設定を追加します。
+
+```yaml
+-   repo: https://github.com/terraform-docs/pre-commit
+    rev: v1.0.0
+    hooks:
+    -   id: terraform_docs
+        args: ["--sort-by-required", "."]
+
+-   repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.83.5
+    hooks:
+    -   id: terraform_fmt
+        args:
+        - --args=-recursive
+    -   id: terraform_validate
+    -   id: terraform_tflint
+    -   id: terraform_tfsec
+```
+
+#### 統合テスト
+
+モジュールの動作を保証するため、小規模なリソースを作成・破棄するテストをCIで実行することを検討します。`modules/<module_name>/examples` ディレクトリにテスト用のTerraformコードを配置し、CIパイプラインで `terraform apply` と `terraform destroy` を実行する構成が一般的です。
+
+---
+
+## 6. CI/CD ガイドライン
 
 このセクションでは、このプロジェクトにおけるCI/CD (継続的インテグレーション/継続的デプロイメント) 戦略の概要を説明します。
 
-### 5.1. CI/CD ツール
+### 6.1. CI/CD ツール
 
 ### ソースコード管理
 
@@ -405,11 +491,11 @@ sequenceDiagram
 - **ツール:** Google Cloud Build
 - **詳細:** ソースコードはGitHubで管理しますが、CI/CDプラットフォームとしてはGoogle Cloud Buildを利用します。
 
-### 5.2. パイプラインの実行トリガー
+### 6.2. パイプラインの実行トリガー
 
 パイプラインは、上記のブランチ戦略に基づいてトリガーされます。これにより、迅速なフィードバックと徹底的な検証のバランスを保ちます。
 
-#### 5.2.1. 単体テスト & 静的解析
+#### 6.2.1. 単体テスト & 静的解析
 
 - **目的:**
   - 個々のコンポーネントが正しく機能することを確認します。
@@ -418,21 +504,21 @@ sequenceDiagram
   - **`feature/*` ブランチへの push 時:** 開発者が自身の変更に対して迅速なフィードバックを得られるようにします。
   - **`develop` ブランチへのプルリクエスト時:** `develop` ブランチにマージされる前に、変更がメインの開発ブランチを破壊しないことを保証します。
 
-#### 5.2.2. 結合テスト
+#### 6.2.2. 結合テスト
 
 - **目的:**
   - 異なるコンポーネントやサービスが、期待通りに連携して動作することを確認します。
 - **トリガー:**
   - **`develop` ブランチへのマージ (push) 時:** メインの開発ブランチに統合されたコードベースの安定性を検証します。
 
-#### 5.2.3. E2E (End-to-End) テスト
+#### 6.2.3. E2E (End-to-End) テスト
 
 - **目的:**
   - 本番に近い環境でシステム全体の最終検証を行います。主要なシナリオは自動化し、手動テストで探索的な検証やUXの確認を行います。
 - **トリガー:**
   - **`main` ブランチへのプルリクエスト時:** `develop` ブランチから `main` へのマージ前に、ステージング環境などで最終的なE2Eテストを実行します。
 
-#### 5.2.4. 本番デプロイ
+#### 6.2.4. 本番デプロイ
 
 - **目的:**
   - アプリケーションを本番環境へデプロイします。
@@ -440,11 +526,11 @@ sequenceDiagram
   - **`main` ブランチへのマージ (push) 時:** 本番環境へデプロイします。
   - **`hotfix/*` ブランチのマージ時:** 緊急の修正を本番環境へデプロイします。
 
-### 5.3. CI/CDフローの視覚的表現
+### 6.3. CI/CDフローの視覚的表現
 
 以下に、CI/CDの各フェーズにおけるフローをシーケンス図で示します。
 
-#### 5.3.1. 開発および単体・結合テスト
+#### 6.3.1. 開発および単体・結合テスト
 
 このフローは、機能開発から`develop`ブランチへの統合までを対象とします。
 
@@ -481,7 +567,7 @@ sequenceDiagram
     CB-->>Developer: 13. 結合テストとデプロイ結果を通知
 ```
 
-#### 5.3.2. E2Eテストとリリースレビュー
+#### 6.3.2. E2Eテストとリリースレビュー
 
 このフローは、`main`ブランチへのマージ前に行われる最終テストフェーズです。自動テストと手動テストの両方が含まれます。
 
@@ -511,7 +597,7 @@ sequenceDiagram
     Reviewer->>MainBranch: 7. 全てのテスト結果と変更内容を確認し、承認 (Approve)
 ```
 
-#### 5.3.3. リリース
+#### 6.3.3. リリース
 
 このフローは、`main`ブランチへのマージをトリガーとした本番環境へのリリース作業です。
 
@@ -536,5 +622,6 @@ sequenceDiagram
 ---
 
 ## 更新履歴 (Changelog)
+- **v1.2.0 (2025-12-14):** TerraformによるIaC開発ガイドラインを追記。
 - **v1.1.0 (2025-12-10):** テストの方針とCI/CDガイドラインを追記。
 - **v1.0.0 (2025-12-08):** 初版作成
