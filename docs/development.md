@@ -18,8 +18,8 @@
 
 ```
 ai-search-app/
-├── backend/            　  # バックエンドアプリケーション (Python)
-├── frontend/               # フロントエンドアプリケーション (将来的なWebアプリ用)
+├── backend/            　  # バックエンドアプリケーション
+├── frontend/               # フロントエンドアプリケーション
 ├── docs/                   # ドキュメント
 ├── .python-version         # Pythonバージョン指定
 ├── .nvmrc                  # Node.jsバージョン指定
@@ -27,7 +27,7 @@ ai-search-app/
 ├── uv.lock                 # Python依存関係のロックファイル
 ├── package.json            # 開発支援ツール依存関係
 ├── pnpm-lock.yaml          # Node.js依存関係のロックファイル
-├── commitlint.config.js    # commitlint設定
+├── commitlint.config.cjs    # commitlint設定
 ├── .opencommit-commitlint  # OpenCommit用プロンプト設定
 ├── .pre-commit-config.yaml # pre-commitフック設定
 ├── .gitignore              # Git除外設定
@@ -50,8 +50,8 @@ ai-search-app/
     - プロジェクトの開発支援に使用するNode.js製ツール（`commitlint`, `opencommit`など）の依存関係を管理します。`pnpm-lock.yaml` は依存バージョンの固定用です。
   - **`.pre-commit-config.yaml`**:
     - コミット時に自動実行される静的解析ツールやフォーマッターの設定を定義します。
-  - **`commitlint.config.js`, `.opencommit-commitlint`**:
-    - `commitlint.config.js` はコミットメッセージのフォーマット規約を定義します。
+  - **`commitlint.config.cjs`, `.opencommit-commitlint`**:
+    - `commitlint.config.cjs` はコミットメッセージのフォーマット規約を定義します。
     - `.opencommit-commitlint` は AIによるメッセージ生成 (`opencommit`) 時のプロンプトやルールを定義する設定ファイルです。
   - **`.gitignore`**:
     - Gitの管理対象から除外するファイルやディレクトリ（`node_modules`, `.venv`, `.env` など）を指定します。
@@ -166,6 +166,7 @@ gitGraph
 
 3.  **プッシュ**:
     -   作業ブランチをリモートリポジトリにプッシュします (`git push origin feature/my-new-feature`)。
+    -   プッシュ後、自動的に単体テストと静的解析が実行されます（詳細は[6.2.1. 単体テスト & 静的解析](#621-単体テスト--静的解析)を参照）。
 
 4.  **Pull Requestの作成**:
     -   GitHub上で、`feature/my-new-feature`ブランチから`develop`ブランチへのPull Requestを作成します。
@@ -181,10 +182,11 @@ gitGraph
 
 #### 2.4.2. リリースフロー
 
-1.  `develop`から`main`へのPull Requestを作成します。
-2.  リリースレビューを行い、承認後にマージします。
-3.  `main`にマージされたコミットにタグ（例: `v1.1.0`）を付与し、リリースノートを作成します。
-4.  タグをトリガーに本番環境へのデプロイが実行されます。
+#### 2.4.2. リリースフロー
+
+リリース作業は、`develop` ブランチから `main` ブランチへの Pull Request マージをトリガーとして、CI/CDパイプラインにより自動的に実行されます。
+
+詳細なフローや自動化の仕組みについては、「[6. CI/CD ガイドライン](#6-cicd-ガイドライン)」、特に「[6.3.3. リリース](#633-リリース)」を参照してください。
 
 ## 2. コミットに関する規約
 
