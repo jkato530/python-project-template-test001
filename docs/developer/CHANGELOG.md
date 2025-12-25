@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 開発者向けドキュメントの初版を作成。
 - `docs/developer` ディレクトリを作成し、ドキュメントの構成を定義。
 - `development.md` にブランチの命名規則を記載。
+- `development.md` の作業ブランチ一覧に `docs/` ブランチを追加。
 - アプリケーション本体と開発ドキュメントの CHANGELOG 運用方針を分離し、`development.md` に記載。
 ### Changed
 - `docs/development.md`:
