@@ -57,14 +57,16 @@ Node.jsのバージョン管理には `nvm` を使用します。
 1.  `nvm`がインストールされていない場合は、[公式リポジトリ](https://github.com/nvm-sh/nvm)を参考にインストールします。
     ```bash
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+    source ~/.bashrc
     ```
-    *インストール後、ターミナルを再起動する必要がある場合があります。*
 
 2.  `.nvmrc` に記載されたバージョンのNode.jsをインストールします。
     ```bash
     nvm install
     ```
-    *`.nvmrc`ファイルがあるため、バージョンを指定する必要はありません。*
+
+    > [!NOTE]
+    > `.nvmrc`ファイルがあるため、バージョンを指定する必要はありません。
 
 3.  プロジェクトで使うNode.jsのバージョンを有効にします。
     ```bash
@@ -74,7 +76,7 @@ Node.jsのバージョン管理には `nvm` を使用します。
 4.  対象バージョンがインストールされていることを確認します。
     ```bash
     node --version
-    # v24.12.0 などと表示されます
+    # v24.12.0 と表示されます
     ```
 
 ### 3. Python依存関係のインストール
@@ -82,9 +84,9 @@ Node.jsのバージョン管理には `nvm` を使用します。
 パッケージ管理には `uv` を使用します。以下のコマンドで、開発に必要なライブラリをインストールしてください。
 
 ```bash
-# uvのインストール (pipの場合)
-#pip install uv
+# uvのインストール
 curl -LsSf https://astral.sh/uv/install.sh | sh
+source ~/.bashrc
 
 # 仮想環境の作成と有効化
 uv venv
@@ -136,16 +138,21 @@ OCO_ONE_LINE_COMMIT=true
 
 #### B. グローバル設定 (初回のみ)
 
-お使いのマシンで初めて`opencommit`を使う際に、以下のコマンドを実行してグローバル設定を行ってください。これにより、ホームディレクトリ配下の`~/.opencommit`に設定が保存されます。
-
-**注意**: `<発行したキー>`の部分は、ご自身で発行したGeminiのAPIキーに置き換えてください。
+初めて`opencommit`を使う際に、以下のコマンドを実行してグローバル設定を行ってください。これにより、ホームディレクトリ配下の`~/.opencommit`に設定が保存されます。
 
 ```bash
-oco config set OCO_AI_PROVIDER=gemini
-oco config set OCO_MODEL=gemini-2.0-flash
-oco config set OCO_API_KEY=<発行したキー>
-oco config set OCO_GITPUSH=false
+pnpm oco config set OCO_AI_PROVIDER=gemini
+pnpm oco config set OCO_MODEL=gemini-2.0-flash
+pnpm oco config set OCO_API_KEY=<発行したキー>
+pnpm oco config set OCO_GITPUSH=false
 ```
+
+>[!CAUTION]
+>`<発行したキー>`の部分は、ご自身で発行したGeminiのAPIキーに置き換えてください。
+
+**APIキーの発行手順**
+- 任意のGoogle Cloudプロジェクトで、APIキーを作成してください（APIキーは、Generative Language APIが許可されている必要があります）。
+- 取得したAPIキーを、`OCO_API_KEY`に貼り付けてください。
 
 ## 詳細な開発ガイドライン
 
