@@ -1,5 +1,5 @@
 # 開発ガイドライン
-**Document Version: 1.2.0**
+**Document Version: 1.0.0**
 *(Last Updated: 2025-12-14)*
 
 > [!NOTE]
@@ -13,18 +13,73 @@
 
 ---
 
-## 1. 開発ワークフローとブランチ戦略
+## 1. ディレクトリ構成
+本プロジェクトの標準的なディレクトリ構成と、各ディレクトリの役割は以下の通りです。
+
+```
+ai-search-app/
+├── .dev-tools/         # 開発プロセス管理用のツール群 (commitlint, opencommit等)
+│   ├── package.json    # 開発ツールの依存関係管理用
+│   └── ...
+├── backend/            # バックエンドアプリケーションコード (Python等)
+├── frontend/           # フロントエンドアプリケーションコード (TS/React等)
+├── terraform/          # インフラ管理 (Terraform)
+├── docs/               # プロジェクトドキュメント
+└── ...
+```
+
+- **`.dev-tools/`**:
+  - プロジェクト全体の開発プロセスを支援するツール（Gitフック、Linterの設定など）を集約します。
+  - アプリケーション本体の依存関係（`backend/` や `frontend/`）とは明確に分離します。
+
+- **`backend/`**:
+  - APIサーバーやバッチ処理などのバックエンドコードを配置します。
+
+- **`frontend/`**:
+  - Webアプリケーションのフロントエンドコードを配置します。
+
+---
+
+## 2. 開発ワークフローとブランチ戦略
 
 本セクションでは、プロジェクトで採用するGitブランチ戦略と、それに伴う開発ワークフローについて解説します。継続的な開発と安定したリリースを両立させることを目的としています。
 
-### 1.1. 基本的な考え方
+### 2.1. 開発フローの全体像
 
-- **`main`ブランチ**: 常に**本番環境で動作可能**な、安定した状態を保ちます。
-- **`develop`ブランチ**: 次期リリースに向けた開発内容を統合するブランチです。すべての機能開発やバグ修正は、一度このブランチにマージされます。
-- **Pull Request (PR)**: `main`や`develop`へのマージは、必ずPull Requestを通じて行い、コードレビューを必須とします。
-- **ブランチは目的別に作成**: 機能追加、バグ修正など、目的が明確なブランチを作成し、作業完了後は速やかに削除します。
+本プロジェクトの開発フローを視覚的に表現すると以下のようになります。`develop` ブランチを中心に開発が進み、`main` ブランチはリリースごとのスナップショットとして機能します。
 
-### 1.2. ブランチの種類と役割
+```mermaid
+%%{init:{
+    'gitGraph':{
+        'mainBranchOrder': 4
+}}}%%
+
+gitGraph
+    commit id: "Initial Commit"
+    branch develop order: 1
+    commit id: "dev-A"
+    branch feature/new-login order: 0
+    commit id: "feat-1"
+    commit id: "feat-2"
+    checkout develop
+    merge feature/new-login id: "Merge feature"
+    commit id: "dev-B"
+    branch release/v1.0.0 order: 2
+    commit id: "Bump version"
+    checkout main
+    merge release/v1.0.0 id: "Release 1.0.0" tag: "v1.0.0"
+    checkout develop
+    merge release/v1.0.0 id: "Sync release"
+    checkout main
+    branch hotfix/critical-bug order: 3
+    commit id: "fix-bug"
+    checkout main
+    merge hotfix/critical-bug id: "Merge hotfix" tag: "v1.0.1"
+    checkout develop
+    merge hotfix/critical-bug id: "Sync hotfix"
+```
+
+### 2.2. ブランチの種類と役割
 
 #### 主要ブランチ
 
@@ -38,101 +93,75 @@
   - `feature`ブランチや`bugfix`ブランチのマージ先となります。
   - このブランチは、ステージング環境（Staging）へ自動的にデプロイされることがあります。
 
-#### 作業ブランチ
+#### 作業ブランチの種類
 
-本プロジェクトでは、ブランチの命名規則として **[Conventional Branch 1.0.0](https://conventional-branch.github.io/#specification)** を採用します。この規約の主な利点は以下の通りです。
-
-- **目的指向のブランチ名**: 各ブランチ名がその目的を明確に示すため、全開発者がブランチの役割を容易に理解できます。
-- **CI/CDとの連携**: 一貫したブランチ名を使用することで、CI/CDパイプラインがブランチ種別に基づいて特定のアクション（例: `release`ブランチからの自動デプロイ）をトリガーしやすくなります。
-- **チームコラボレーションの促進**: ブランチの目的が明確になることで誤解が減り、チームメンバーが混乱なくタスクを切り替えられるようになります。
-
-これにより、ブランチ名からその目的を明確に理解できるようにし、チームの連携やCI/CDとの統合を円滑にします。
-
-ブランチ名は、基本的に以下のフォーマットに従います。
-
-`<type>/<description>`
-
-##### 1.2.1. ブランチの種別 (type)
-
-サポートされる `<type>` は以下の通りです。
+サポートされるブランチ種別（プレフィックス）とその役割は以下の通りです。
 
 - **`feature/`**
-  - 新しい機能の開発を行うためのブランチです。
-  - 必ず`develop`ブランチから作成し、作業完了後は`develop`ブランチに対してPull Requestを作成します。
-  - 例: `feature/add-login-page`, `feat/user-authentication`
+  - 新機能の開発用ブランチ
+  - 基点ブランチ：`develop`
+  - マージ先：`develop`
+  - 例: `feature/add-login-page`
 
 - **`bugfix/`**
-  - `develop`ブランチ上で見つかったバグを修正するためのブランチです。
-  - `develop`ブランチから作成し、修正完了後は`develop`ブランチに対してPull Requestを作成します。
-  - 例: `bugfix/fix-header-bug`, `fix/login-form-validation`
+  - `develop`ブランチで見つかったバグを修正するためのブランチ
+  - 基点ブランチ：`develop`
+  - マージ先：`develop`
+  - 例: `bugfix/fix-header-bug`
 
 - **`hotfix/`**
-  - 本番環境で発生した緊急のバグを修正するためのブランチです。
-  - **`main`ブランチから直接作成**します。
-  - 修正完了後、**`main`と`develop`の両方**に対してPull Requestを作成し、マージします。
+  - 本番環境で発生した緊急のバグを修正するためのブランチ
+  - 基点ブランチ：`main`
+  - マージ先：`main`と`develop`の両方
   - 例: `hotfix/security-patch`
 
 - **`release/`**
-  - リリース準備のためのブランチです。バージョン番号の更新、リリースノートの作成などを行います。
-  - `develop`ブランチから作成し、`main`と`develop`の両方にマージされることがあります。
+  - リリース準備のためのブランチ
+  - 基点ブランチ：`develop`
+  - マージ先：`main`と`develop`
   - 例: `release/v1.2.0`
 
 - **`chore/`**
-  - ドキュメントの更新、依存関係のアップデート、ビルドスクリプトの修正など、ソースコードのロジック変更を伴わない雑多なタスクのためのブランチです。
-  - `develop`ブランチから作成し、`develop`にマージします。
-  - 例: `chore/update-dependencies`, `chore/update-readme`
+  - ビルドツールやドキュメント修正など、ロジック変更を伴わないタスク用
+  - 基点ブランチ：`develop`
+  - マージ先：`develop`
+  - 例: `chore/update-dependencies`
 
-##### 1.2.2. 説明 (description) の命名規則
+### 2.3. ブランチの命名規則
+
+本プロジェクトでは、ブランチの命名規則として **[Conventional Branch 1.0.0](https://conventional-branch.github.io/#specification)** を採用します。
+
+#### 2.3.1. フォーマット
+
+ブランチ名は、以下のフォーマットに従います。
+
+```
+<type>/<description>
+```
+
+- **`<type>`**: 上記「作業ブランチの種類」で挙げたプレフィックス（`feature`, `bugfix`など）。
+- **`<description>`**: 作業内容を表す簡潔な説明。
+
+#### 2.3.2. 命名のルール (description)
 
 -   **小文字の英数字、ハイフン、ドットのみを使用する**:
     -   単語の区切りにはハイフン (`-`) を使用します。アンダースコア (`_`) やスペースは避けてください。
     -   `release` ブランチの場合のみ、バージョン番号を表すためにドット (`.`) を使用できます。
 -   **記号を連続させない、先頭や末尾に使用しない**:
-    -   ハイフンやドットを連続させたり (`feature/new--login`)、説明の先頭や末尾に使ったりしないでください (`feature/-new-login`)。
+    -   `feature/new--login` や `feature/-new-login` はNGです。
 -   **明確かつ簡潔に**:
-    -   ブランチ名は、その作業内容がわかるように、説明的かつ簡潔であるべきです。
+    -   ブランチ名は、その作業内容がわかるように記述します。
 -   **チケット番号を含める (推奨)**:
-    -   プロジェクト管理ツールのチケット番号がある場合は、説明の先頭に含めることで追跡が容易になります。
     -   例: `feature/issue-123-new-login`
 
-**良い例:**
-- `feature/add-user-login-page`
-- `fix/issue-45-header-bug`
-- `release/v1.2.0`
-- `chore/update-dependencies`
-
 **悪い例:**
-- `my-branch` (種別と目的が不明)
-- `feature/NewLogin` (大文字が含まれている)
-- `bugfix/fix_header_bug` (ハイフンの代わりにアンダースコアが使われている)
-- `release/v1.2.0.` (末尾にドットがある)
+- `my-branch` (種別不明)
+- `feature/NewLogin` (大文字使用)
+- `bugfix/fix_header_bug` (アンダースコア使用)
 
-### 1.3. ワークフローの視覚的表現
+### 2.4. 具体的な開発手順
 
-Mermaid.jsによるブランチの流れの図です。
-
-```mermaid
-gitGraph
-    commit id: "Initial Commit"
-    branch develop
-    commit id: "dev-A"
-    branch feature/new-login
-    commit id: "feat-1"
-    commit id: "feat-2"
-    checkout develop
-    merge feature/new-login id: "Merge 'new-login'"
-    commit id: "dev-B"
-    checkout main
-    merge develop id: "Release 1.0" tag: "v1.0.0"
-    branch hotfix/critical-bug
-    commit id: "fix-bug"
-    checkout main
-    merge hotfix/critical-bug id: "Merge 'hotfix'" tag: "v1.0.1"
-    checkout develop
-    merge hotfix/critical-bug id: "Sync hotfix to develop"
-```
-
-### 1.4. 一般的な開発フロー（新機能開発）
+#### 2.4.1. 一般的な開発フロー（新機能開発）
 
 1.  **ブランチの作成**:
     -   ローカルの`develop`ブランチを最新の状態にします (`git pull origin develop`)。
@@ -153,18 +182,15 @@ gitGraph
     -   指摘事項があれば、ローカルの`feature`ブランチで修正し、再度プッシュします。PRは自動的に更新されます。
 
 6.  **マージ**:
-    -   レビューで承認（Approve）され、自動テスト（CI）がすべて成功したら、PRをマージします。
-    -   マージ後、不要になった`feature`ブランチは削除します。
+    -   承認（Approve）後、PRをマージします。
+    -   作業ブランチは削除します。
 
-### 1.5. リリースフロー
+#### 2.4.2. リリースフロー
 
-1.  `develop`ブランチのコードがリリースの基準に達したら、`develop`から`main`へのPull Requestを作成します。
-2.  このPRは、最終的なリリースレビューとして機能します。
-3.  承認後、PRを`main`にマージします。
-4.  `main`ブランチにマージされたコミットに対して、`v1.1.0`のような形式でGitのタグを付与し、リリースノートを作成します。
-5.  このタグをトリガーとして、本番環境へのデプロイが実行されます。
-
----
+1.  `develop`から`main`へのPull Requestを作成します。
+2.  リリースレビューを行い、承認後にマージします。
+3.  `main`にマージされたコミットにタグ（例: `v1.1.0`）を付与し、リリースノートを作成します。
+4.  タグをトリガーに本番環境へのデプロイが実行されます。
 
 ## 2. コミットに関する規約
 
@@ -670,14 +696,21 @@ sequenceDiagram
 
 ---
 
-## 7. バージョニングと変更履歴
+## 7. バージョニングと変更履歴（CHANGELOG）
 
-本プロジェクトでは、アプリケーション本体とこの開発ガイドラインで、それぞれ独立したバージョニングを行います。
+本プロジェクトでは、変更履歴を管理するために2つの `CHANGELOG.md` ファイルを運用します。
 
-### 7.1. アプリケーションのバージョニングと `CHANGELOG.md`
+1.  **アプリケーション本体用**: プロジェクトルートの `CHANGELOG.md`
+2.  **開発ドキュメント用**: `docs/developer/CHANGELOG.md`
 
-アプリケーションの変更履歴は、プロジェクトルートの `CHANGELOG.md` ファイルに記録します。これにより、ユーザーや開発者はリリースごとの変更点を容易に追跡できます。
+それぞれの目的と運用方法を以下に定めます。
 
+### 7.1. アプリケーション本体のCHANGELOG
+
+アプリケーション本体の変更履歴は、プロジェクトルートの `CHANGELOG.md` ファイルに記録します。これにより、ユーザーや開発者はリリースごとの変更点を容易に追跡できます。
+
+- **対象**: アプリケーションのコードベースへの変更（機能追加、バグ修正など）。
+- **パス**: `CHANGELOG.md`
 - **フォーマット**: [Keep a Changelog](https://keepachangelog.com/ja/1.0.0/) の形式に従います。
 - **更新タイミング**:
     - 新機能の追加、バグ修正、破壊的変更など、ユーザーに影響のある変更が `develop` ブランチにマージされるたびに、`CHANGELOG.md` の "Unreleased" (未リリース) セクションに追記します。
@@ -690,13 +723,15 @@ sequenceDiagram
     - `Fixed`: バグ修正
     - `Security`: セキュリティ関連の修正
 
-### 7.2. ドキュメントのバージョニングと `docs/CHANGELOG.md`
+### 7.2. 開発ドキュメントのCHANGELOG
 
-この開発ガイドライン (`docs/development.md`) は、プロジェクトのルールやワークフローの変更を反映するために、独自のバージョンを持ちます。
+この開発ガイドライン (`docs/development.md`) など、開発プロセスに関するドキュメントの変更履歴を記録します。
 
+- **対象**: `docs` 配下、特にこの `development.md` のような開発ルールやワークフローの変更。
+- **パス**: `docs/developer/CHANGELOG.md`
 - **バージョン番号**: ドキュメントの先頭に `Document Version: X.Y.Z` として記載されています。
-- **更新**: ガイドラインに重要な変更（ブランチ戦略の変更、新しいツールの導入など）があった場合にバージョンを更新します。
-- **変更履歴**: 更新履歴は [`docs/CHANGELOG.md`](./CHANGELOG.md) ファイルに記録します。
+- **更新**: ガイドラインに重要な変更（ブランチ戦略の変更、新しいツールの導入など）があった場合にバージョンを更新し、その変更内容をCHANGELOGに記録します。
+- **変更履歴**: 更新履歴は [`docs/developer/CHANGELOG.md`](./developer/CHANGELOG.md) ファイルに記録します。
 
 ### 7.3. GitHub Releasesとの連携
 
@@ -765,4 +800,4 @@ jobs:
 
 ## 更新履歴 (Changelog)
 
-このドキュメントの変更履歴は、[`CHANGELOG.md`](./CHANGELOG.md)ファイルに記録されています。
+このドキュメント (`development.md`) の変更履歴は、[`developer/CHANGELOG.md`](./developer/CHANGELOG.md)ファイルに記録されています。
