@@ -18,25 +18,45 @@
 
 ```
 ai-search-app/
-├── .dev-tools/         # 開発プロセス管理用のツール群 (commitlint, opencommit等)
-│   ├── package.json    # 開発ツールの依存関係管理用
-│   └── ...
-├── backend/            # バックエンドアプリケーションコード (Python等)
-├── frontend/           # フロントエンドアプリケーションコード (TS/React等)
-├── terraform/          # インフラ管理 (Terraform)
-├── docs/               # プロジェクトドキュメント
-└── ...
+├── backend/            　  # バックエンドアプリケーション (Python)
+├── frontend/               # フロントエンドアプリケーション (将来的なWebアプリ用)
+├── docs/                   # ドキュメント
+├── .python-version         # Pythonバージョン指定
+├── .nvmrc                  # Node.jsバージョン指定
+├── pyproject.toml          # Pythonパッケージ管理設定
+├── uv.lock                 # Python依存関係のロックファイル
+├── package.json            # 開発支援ツール依存関係
+├── pnpm-lock.yaml          # Node.js依存関係のロックファイル
+├── commitlint.config.js    # commitlint設定
+├── .opencommit-commitlint  # OpenCommit用プロンプト設定
+├── .pre-commit-config.yaml # pre-commitフック設定
+├── .gitignore              # Git除外設定
+├── CHANGELOG.md            # 変更履歴
+└── README.md
 ```
-
-- **`.dev-tools/`**:
-  - プロジェクト全体の開発プロセスを支援するツール（Gitフック、Linterの設定など）を集約します。
-  - アプリケーション本体の依存関係（`backend/` や `frontend/`）とは明確に分離します。
 
 - **`backend/`**:
   - APIサーバーやバッチ処理などのバックエンドコードを配置します。
 
 - **`frontend/`**:
   - Webアプリケーションのフロントエンドコードを配置します。
+
+- **設定ファイル群**:
+  - **`.python-version`, `.nvmrc`**:
+    - プロジェクトで使用する言語ランタイムのバージョンを定義します。開発環境の一貫性を保つために使用されます。
+  - **`pyproject.toml`, `uv.lock`**:
+    - Pythonプロジェクトのメタデータや依存関係（ライブラリ）を管理します。`uv.lock` は依存関係のバージョンを固定し、再現可能な環境構築を保証します。
+  - **`package.json`, `pnpm-lock.yaml`**:
+    - プロジェクトの開発支援に使用するNode.js製ツール（`commitlint`, `opencommit`など）の依存関係を管理します。`pnpm-lock.yaml` は依存バージョンの固定用です。
+  - **`.pre-commit-config.yaml`**:
+    - コミット時に自動実行される静的解析ツールやフォーマッターの設定を定義します。
+  - **`commitlint.config.js`, `.opencommit-commitlint`**:
+    - `commitlint.config.js` はコミットメッセージのフォーマット規約を定義します。
+    - `.opencommit-commitlint` は AIによるメッセージ生成 (`opencommit`) 時のプロンプトやルールを定義する設定ファイルです。
+  - **`.gitignore`**:
+    - Gitの管理対象から除外するファイルやディレクトリ（`node_modules`, `.venv`, `.env` など）を指定します。
+  - **`CHANGELOG.md`**:
+    - アプリケーションのリリースごとの変更履歴を記録します。
 
 ---
 
@@ -83,49 +103,22 @@ gitGraph
 
 #### 主要ブランチ
 
-- **`main`**
-  - 本番環境（Production）にリリースされているコードの最新版です。
-  - このブランチへの直接のコミットは**固く禁止**します。
-  - `develop`ブランチからのマージ、または緊急の`hotfix`ブランチからのマージのみを受け入れます。
-
-- **`develop`**
-  - 開発中の最新バージョンです。開発のベースとなる中心的なブランチです。
-  - `feature`ブランチや`bugfix`ブランチのマージ先となります。
-  - このブランチは、ステージング環境（Staging）へ自動的にデプロイされることがあります。
+| ブランチ名 | 役割 | マージポリシー | 備考 |
+| :--- | :--- | :--- | :--- |
+| **`main`** | 本番環境（Production）の最新版 | `develop`, `hotfix` からのみ | **直接コミット禁止** |
+| **`develop`** | 開発中の最新バージョン | `feature`, `bugfix` 等からのマージ先 | ステージング環境へデプロイ |
 
 #### 作業ブランチの種類
 
-サポートされるブランチ種別（プレフィックス）とその役割は以下の通りです。
+各ブランチ種別（プレフィックス）の定義は以下の通りです。
 
-- **`feature/`**
-  - 新機能の開発用ブランチ
-  - 基点ブランチ：`develop`
-  - マージ先：`develop`
-  - 例: `feature/add-login-page`
-
-- **`bugfix/`**
-  - `develop`ブランチで見つかったバグを修正するためのブランチ
-  - 基点ブランチ：`develop`
-  - マージ先：`develop`
-  - 例: `bugfix/fix-header-bug`
-
-- **`hotfix/`**
-  - 本番環境で発生した緊急のバグを修正するためのブランチ
-  - 基点ブランチ：`main`
-  - マージ先：`main`と`develop`の両方
-  - 例: `hotfix/security-patch`
-
-- **`release/`**
-  - リリース準備のためのブランチ
-  - 基点ブランチ：`develop`
-  - マージ先：`main`と`develop`
-  - 例: `release/v1.2.0`
-
-- **`chore/`**
-  - ビルドツールやドキュメント修正など、ロジック変更を伴わないタスク用
-  - 基点ブランチ：`develop`
-  - マージ先：`develop`
-  - 例: `chore/update-dependencies`
+| プレフィックス | 役割 | 基点 | マージ先 | 命名例 |
+| :--- | :--- | :--- | :--- | :--- |
+| **`feature/`** | 新機能の開発 | `develop` | `develop` | `feature/add-login-page` |
+| **`bugfix/`** | バグ修正 | `develop` | `develop` | `bugfix/fix-header-bug` |
+| **`hotfix/`** | 本番環境の緊急修正 | `main` | `main`, `develop` | `hotfix/security-patch` |
+| **`release/`** | リリース準備 | `develop` | `main`, `develop` | `release/v1.2.0` |
+| **`chore/`** | 雑務（ビルド設定等） | `develop` | `develop` | `chore/update-dependencies` |
 
 ### 2.3. ブランチの命名規則
 
