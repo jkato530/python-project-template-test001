@@ -7,21 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.0] - 2025-12-16
+## [0.1.0] - 2025-12-26
 ### Added
-- 開発者向けドキュメントの初版を作成。
-- `docs/developer` ディレクトリを作成し、ドキュメントの構成を定義。
-- `development.md` にブランチの命名規則を記載。
-- `development.md` の作業ブランチ一覧に `docs/` ブランチを追加。
-- アプリケーション本体と開発ドキュメントの CHANGELOG 運用方針を分離し、`development.md` に記載。
-### Changed
-- `docs/development.md`:
-    - ディレクトリ構成（1. ディレクトリ構成）を更新。
-    - .dev-tools配下のファイルをルートディレクトリに再配置（開発体験向上のため構造を簡素化）。
-    - 既存の「1. 開発ワークフローとブランチ戦略」以降を章番号2以降に繰り下げ。
-    - ブランチ戦略のセクションを再構成。
-        - 開発フローの全体像（Mermaid図）を追加。
-        - ブランチの命名規則を独立したセクションに分離。
+- 開発者向けドキュメントの初版を作成 (Documentation Version 0.1.0).
+- プロジェクトのディレクトリ構成と役割を定義.
+- ブランチ戦略 (Conventional Branch) と開発ワークフローを策定.
+- コミット規約 (Conventional Commits) と自動生成ツール (opencommit/commitlint) の設定を記述.
+- CI/CDガイドライン (Google Cloud Build) を策定.
+- Terraform による IaC 開発ガイドラインを追加.
 
-[Unreleased]: https://github.com/your-org/your-repo/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/your-org/your-repo/releases/tag/v1.0.0
+[Unreleased]: https://github.com/your-org/your-repo/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/your-org/your-repo/releases/tag/v0.1.0
