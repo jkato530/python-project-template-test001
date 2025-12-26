@@ -1,31 +1,42 @@
 name: Create Release
 
 on:
-  push:
-    tags:
-      - 'v*' # vX.Y.Zのようなタグがプッシュされたときに実行
+  pull_request:
+    types: [closed]
+    branches:
+      - main
 
 jobs:
-  build:
+  release:
+    # PRがマージされ、かつソースブランチが release/ で始まる場合のみ実行
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Get Changelog Entry
-        id: changelog
-        uses: mindsers/changelog-reader-action@v2
         with:
-          version: ${{ github.ref_name }} # タグ名 (e.g., v1.2.0) をバージョンとして使用
-          path: ./CHANGELOG.md
+          fetch-depth: 0  # 全履歴を取得（タグ作成に必要）
+
+      - name: Extract version from branch name
+        id: version
+        run: |
+          BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
+          VERSION="${BRANCH_NAME#release/}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Extracted version: ${VERSION}"
+
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ steps.version.outputs.version }}"
+          git push origin "${{ steps.version.outputs.version }}"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2.5.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          name: Release ${{ github.ref_name }}
-          body: ${{ steps.changelog.outputs.changes }}
+          tag_name: ${{ steps.version.outputs.version }}
+          generate_release_notes: true
           draft: false
           prerelease: false
