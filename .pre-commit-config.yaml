@@ -57,5 +57,5 @@ repos:
           name: check-branch-name
           entry: scripts/hooks/check-branch-name.sh
           language: system
-          stages: [push]
+          stages: [pre-push]
           pass_filenames: false
