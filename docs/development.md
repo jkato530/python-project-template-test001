@@ -148,12 +148,26 @@ gitGraph
     -   `feature/new--login` や `feature/-new-login` はNGです。
 -   **明確かつ簡潔に**:
     -   ブランチ名は、その作業内容がわかるように記述します。
--   **`release`ブランチの特別ルール**:
+
+#### 2.3.3. 特別ルール
+
+-   **`release`ブランチ**:
     -   `release`ブランチは必ず`release/vX.Y.Z`形式（セマンティックバージョニング）で作成する必要があります。
     -   例: `release/v1.0.0`, `release/v0.1.0`
     -   `release/1.0.0`（vが無い）や`release/v1.0`（パッチバージョンが無い）は不可
+-   **`hotfix`ブランチ**:
+    -   `hotfix`ブランチは説明的な名前（例: `hotfix/security-patch`）で作成します。
+    -   バージョン番号はブランチ名に含めません。最新タグから自動でパッチバージョンがインクリメントされます。
 
-#### 2.3.3. ブランチ名の自動チェック
+> [!NOTE]
+> **なぜ`hotfix`ブランチでは自動バージョンインクリメントを採用するのか？**
+>
+> 1.  **セマンティックバージョニングの原則**: hotfixは必ずパッチバージョン（`X.Y.Z`の`Z`）を上げるため、自動採番が可能です。
+> 2.  **緊急時の手間削減**: 本番環境の緊急修正時に、バージョン番号を考えたりブランチ名を変更したりする手間を省きます。
+> 3.  **連続修正への柔軟性**: hotfix作業中にさらに問題が見つかった場合でも、ブランチ名を変更せずに同じブランチで作業を続けられます。
+> 4.  **一貫性の維持**: リリース時に自動で正しいバージョンが付与されるため、人為的ミスを防げます。
+
+#### 2.3.4. ブランチ名の自動チェック
 
 ブランチ名が命名規則に従っているかは、`git push`時に自動的にチェックされます。
 
@@ -163,6 +177,7 @@ gitGraph
     -   `type`が許可されたもの（`feature`, `bugfix`, `hotfix`, `release`, `docs`, `chore`）か
     -   `description`が命名ルールに従っているか
     -   `release`ブランチが`vX.Y.Z`形式になっているか
+    -   `hotfix`ブランチが説明的な名前（バージョン番号を含まない）になっているか
 -   **除外**: `main`, `develop`ブランチはチェック対象外
 -   **実装**: `.pre-commit-config.yaml`の`check-branch-name`フック
 -   **スクリプト**: [`scripts/hooks/check-branch-name.sh`](../scripts/hooks/check-branch-name.sh)
@@ -742,9 +757,11 @@ GitHub Actions を利用してリリース作成を自動化します。
 
 **ワークフローの概要**:
 
-1.  **トリガー**: `release/vX.Y.Z`ブランチから`main`ブランチへのPull Requestがマージされると、ワークフローが起動します。
-2.  **バージョン抽出**: ブランチ名から自動的にバージョン番号を抽出します（例: `release/v1.2.0` → `v1.2.0`）。
-3.  **タグ作成**: 抽出したバージョン番号でGitタグを作成します。
+1.  **トリガー**: `release/vX.Y.Z`または`hotfix/description`ブランチから`main`ブランチへのPull Requestがマージされると、ワークフローが起動します。
+2.  **バージョン決定**:
+    -   **releaseブランチ**: ブランチ名から直接抽出（例: `release/v1.2.0` → `v1.2.0`）
+    -   **hotfixブランチ**: 最新タグのパッチバージョンを自動インクリメント（例: `v1.0.0` → `v1.0.1`）
+3.  **タグ作成**: 決定したバージョン番号でGitタグを作成します。
 4.  **リリース作成**: GitHubがコミット履歴を解析し、リリースノートを自動生成してGitHub Releaseを作成します。
 
 **実装方法**:
@@ -753,13 +770,21 @@ GitHub Actions を利用してリリース作成を自動化します。
 
 ワークフローの詳細は [`.github/workflows/release.yml`](../.github/workflows/release.yml) を参照してください。
 
-**リリース手順**:
+**リリース手順（通常リリース）**:
 
 1. `main` ブランチから `release/vX.Y.Z` ブランチを作成します。
 2. `release/vX.Y.Z`ブランチをリモートリポジトリにプッシュします。
 3. `release/vX.Y.Z`ブランチから`main`ブランチへのPull Requestを作成します。
 4. Pull Requestをマージします。
-5. Pull Requestをトリガーに、GitHub Actionsが自動的に`vX.Y.Z`タグを作成し、リリースノート（GitHub Release）を自動生成します。
+5. マージをトリガーに、GitHub Actionsが自動的に`vX.Y.Z`タグを作成し、リリースノート（GitHub Release）を自動生成します。
+
+**hotfix手順（緊急修正）**:
+
+1. `main` ブランチから `hotfix/description` ブランチを作成します（例: `hotfix/security-patch`）。
+2. `hotfix/description`ブランチをリモートリポジトリにプッシュします。
+3. `hotfix/description`ブランチから`main`ブランチへのPull Requestを作成します。
+4. Pull Requestをマージします。
+5. マージをトリガーに、GitHub Actionsが最新タグからパッチバージョンを自動インクリメントし、新しいタグとリリースノートを自動生成します。
 
 ---
 
