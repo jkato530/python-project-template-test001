@@ -154,6 +154,25 @@ pnpm oco config set OCO_GITPUSH=false
 - 任意のGoogle Cloudプロジェクトで、APIキーを作成してください（APIキーは、Generative Language APIが許可されている必要があります）。
 - 取得したAPIキーを、`OCO_API_KEY`に貼り付けてください。
 
+### 7. GitHubリポジトリの初期設定
+
+リポジトリをGitHubで管理する場合、以下の設定を行ってください。
+
+#### A. ブランチ保護ルールの設定
+
+`main`ブランチの品質を保つため、ブランチ保護ルールを設定します。
+
+1. GitHubリポジトリページで、**Settings** > **Branches** に移動
+2. **Branch protection rules** セクションで **Add rule** をクリック
+3. **Branch name pattern** に `main` を入力
+4. 以下のオプションを有効化：
+   - ✅ **Require a pull request before merging**
+   - ✅ **Require status checks to pass before merging**
+   - ✅ **Require branches to be up to date before merging**
+5. **Save changes** をクリック
+
+詳細は [開発ガイドライン - ブランチ保護ルール](./docs/development.md#243-ブランチ保護ルールの設定) を参照してください。
+
 ## 詳細な開発ガイドライン
 
 コーディング規約やコミットのワークフローなど、より詳細な開発ルールについては、以下のドキュメントを参照してください。
