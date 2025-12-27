@@ -8,46 +8,23 @@ on:
 
 jobs:
   release:
-    # PRがマージされ、かつソースブランチが release/ または hotfix/ で始まる場合のみ実行
-    if: github.event.pull_request.merged == true && (startsWith(github.event.pull_request.head.ref, 'release/') || startsWith(github.event.pull_request.head.ref, 'hotfix/'))
+    # PRがマージされ、かつソースブランチが release/ で始まる場合のみ実行
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
-          fetch-depth: 0  # 全履歴を取得（タグ取得に必要）
+          fetch-depth: 0  # 全履歴を取得（タグ作成に必要）
 
-      - name: Determine version
+      - name: Extract version from branch name
         id: version
         run: |
           BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
-
-          if [[ "$BRANCH_NAME" =~ ^release/ ]]; then
-            # releaseブランチ: ブランチ名から直接抽出
-            VERSION="${BRANCH_NAME#release/}"
-            echo "version=${VERSION}" >> $GITHUB_OUTPUT
-            echo "Extracted version from release branch: ${VERSION}"
-          elif [[ "$BRANCH_NAME" =~ ^hotfix/ ]]; then
-            # hotfixブランチ: 最新タグのパッチバージョンをインクリメント
-            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-            echo "Latest tag: ${LATEST_TAG}"
-
-            # vX.Y.Z形式からバージョン番号を抽出
-            if [[ "$LATEST_TAG" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
-              MAJOR="${BASH_REMATCH[1]}"
-              MINOR="${BASH_REMATCH[2]}"
-              PATCH="${BASH_REMATCH[3]}"
-              NEW_PATCH=$((PATCH + 1))
-              VERSION="v${MAJOR}.${MINOR}.${NEW_PATCH}"
-            else
-              echo "Error: Invalid tag format: ${LATEST_TAG}"
-              exit 1
-            fi
-
-            echo "version=${VERSION}" >> $GITHUB_OUTPUT
-            echo "Auto-incremented version for hotfix: ${VERSION}"
-          fi
+          VERSION="${BRANCH_NAME#release/}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Extracted version: ${VERSION}"
 
       - name: Create and push tag
         run: |

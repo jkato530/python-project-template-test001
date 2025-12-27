@@ -50,17 +50,6 @@ if [[ "$TYPE" == "release" ]]; then
         echo "例: release/v1.0.0, release/v0.1.0"
         exit 1
     fi
-elif [[ "$TYPE" == "hotfix" ]]; then
-    # hotfix/description形式を許可（説明的な名前）
-    # バージョンは最新タグから自動でインクリメントされるため、ブランチ名には不要
-    if [[ ! "$DESCRIPTION" =~ ^[a-z0-9]+[a-z0-9-]*[a-z0-9]+$ ]] && [[ ! "$DESCRIPTION" =~ ^[a-z0-9]+$ ]]; then
-        echo "[ERROR] ブランチ名のエラー: '$BRANCH_NAME'"
-        echo ""
-        echo "descriptionは小文字英数字とハイフンのみ使用できます。"
-        echo "記号を連続させたり、先頭・末尾に使用することはできません。"
-        echo "例: hotfix/security-patch, hotfix/critical-bug"
-        exit 1
-    fi
 else
     # 通常のブランチはドット不可
     if [[ ! "$DESCRIPTION" =~ ^[a-z0-9]+[a-z0-9-]*[a-z0-9]+$ ]] && [[ ! "$DESCRIPTION" =~ ^[a-z0-9]+$ ]]; then
